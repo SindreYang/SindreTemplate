@@ -16,19 +16,19 @@
 __author__ = 'sindre'
 
 import json
+import math
 
 import numpy as np
-import scipy
-import trimesh
-import vedo
-import math
+import open3d as o3d
 import scipy
 import scipy.misc
 import torch
-from PIL import Image
+import trimesh
+import vedo
 import vtk
+from PIL import Image
 from vtk.util import numpy_support as np_support
-import open3d as o3d
+
 
 class ToothMeshInfo(object):
     """Get tooth mesh information from stl file.

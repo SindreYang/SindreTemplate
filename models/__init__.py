@@ -14,21 +14,23 @@
 ==================================================
 '''
 __author__ = 'sindre'
+import time
+from copy import deepcopy
+
+import hydra
 import numpy as np
+import pymeshlab
 import torch
 import trimesh
-from copy import deepcopy
 import vedo
-from pygco import cut_from_graph
-from sklearn.neighbors import KNeighborsClassifier
-import pymeshlab
 from matplotlib import pyplot as plt
 from omegaconf import DictConfig, OmegaConf
-import hydra
-import time
-from .net import meshsegnet,ShapeNet32Vox,hrnet
+from pygco import cut_from_graph
+from sklearn.neighbors import KNeighborsClassifier
+
+from .net import ShapeNet32Vox, hrnet, meshsegnet
+from .tools import CaptureToothImage, decode_preds, fix_axis, fix_mesh
 from .voxels import *
-from .tools import fix_mesh, fix_axis, CaptureToothImage, decode_preds
 
 
 

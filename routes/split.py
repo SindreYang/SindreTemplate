@@ -10,7 +10,6 @@ from werkzeug.utils import secure_filename
 
 from conf.config import split_config
 
-
 blueprint = Blueprint(
     split_config.name,
     __name__,
