@@ -1,45 +1,52 @@
-# SindreTemplate
+# SindreGui PyQt 模板
 
-SindreTemplate 是一个按 Git 分支组织的开发模板仓库。每个模板保持独立
-的目录结构、依赖和验证流程；本仓库的 `main` 分支只保存模板索引、统一
-规范和工作树管理工具。
+基于 PyQt5、Qt Designer 和插件入口点的通用桌面应用模板，属于
+[`SindreTemplate`](https://github.com/SindreYang/SindreTemplate) 的
+`template/pyqt` 分支。
 
-## 模板分支
+## 快速开始
 
-| 模板 | 分支 | 用途 |
-| --- | --- | --- |
-| PyTorch Hydra | `template/pytorch-hydra` | PyTorch、Hydra、Fabric 实验和训练 |
-| CMake | `template/cmake` | 跨平台 C++/CMake 项目 |
-| Flask | `template/flask` | 可测试的 Flask 推理服务 |
-| Project | `template/project` | 最小 Python 项目 |
-
-完整信息见 [`templates.yaml`](templates.yaml)。
-
-## 使用模板
-
-```powershell
-git clone https://github.com/SindreYang/SindreTemplate.git
-cd SindreTemplate
-git worktree add ..\SindreTemplate-pytorch template/pytorch-hydra
+```bash
+uv sync --extra dev
+uv run sindre-gui
 ```
 
-也可以直接检出某个模板分支：
+无界面环境运行测试：
 
 ```powershell
-git clone --branch template/pytorch-hydra https://github.com/SindreYang/SindreTemplate.git my-project
+$env:QT_QPA_PLATFORM = "offscreen"
+uv run pytest
 ```
 
-列出模板和创建工作树：
+## 项目结构
 
-```powershell
-.\tools\list-templates.ps1
-.\tools\worktree.ps1 add pytorch-hydra ..\SindreTemplate-pytorch
+- `src/sindre_gui`：应用、Dock 管理、插件运行时和通用组件。
+- `src/sindre_gui/ui/forms`：Qt Designer 源文件。
+- `src/sindre_gui/ui/generated`：提交到仓库的 Qt Python 绑定。
+- `plugins/examples`：最小外部插件示例。
+- `tests`：导入、Qt 窗口和插件运行时测试。
+
+## 生成 Qt 界面代码
+
+修改 `.ui` 文件后执行：
+
+```bash
+uv run python -m sindre_gui.ui.generate
 ```
 
-## 统一约定
+`.ui` 和生成的 `.py` 文件都保留，确保没有 Qt Designer 的环境也可以运行。
 
-- Python 项目使用 `uv` 管理环境和锁文件，不主动修改全局 Python 环境。
-- C++ 项目使用 CMake，构建目录放在源码树外。
-- 模板必须能从全新克隆目录完成安装、测试和最小启动验证。
-- 开发机路径、私有模型、凭据和大体积构建产物不得进入模板。
-- 每个模板分支的 README 必须说明安装、运行、测试和目录结构。
+## 插件
+
+插件通过 `sindre_gui.plugins` 入口组发现。完整接口和示例见
+[`docs/plugin-development.md`](docs/plugin-development.md)。
+
+VTK、LMDB、REST 等业务功能不属于核心模板，应作为独立插件安装。
+
+## 验证
+
+```bash
+uv run ruff check .
+uv run pytest
+uv run python -m build
+```
