@@ -5,11 +5,18 @@ description = "最小、可测试、可发布的 Python 项目模板"
 requires-python = ">=3.10"
 dependencies = []
 
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = ["build>=1.2", "pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
 sindre-project = "project_template.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/project_template"]
 
 [tool.uv]
 default-groups = ["dev"]

@@ -1,5 +1,7 @@
 # Python Project Template
 
+[![CI](https://github.com/SindreYang/SindreTemplate/actions/workflows/ci.yml/badge.svg?branch=template%2Fproject)](https://github.com/SindreYang/SindreTemplate/actions/workflows/ci.yml)
+
 一个最小、现代、可测试的 Python 项目模板。适合创建：
 
 - Python 库
@@ -52,6 +54,13 @@ uv.lock          # 可复现依赖版本
 uv run ruff check .
 uv run pytest
 uv run python -m build
+```
+
+构建产物会写入 `dist/`；发布前应在全新环境中安装 wheel 并执行最小导入检查：
+
+```powershell
+uv run python -m build
+uv run --isolated --with . python -c "from project_template import multiply; print(multiply(4, 2))"
 ```
 
 ## 添加依赖
