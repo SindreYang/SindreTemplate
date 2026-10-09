@@ -4,3 +4,8 @@ __pycache__/
 venv/
 .env
 resources/cache/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+uvicorn.log
