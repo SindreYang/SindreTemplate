@@ -41,6 +41,8 @@ uv run python -m sindre_gui.ui.generate
 插件通过 `sindre_gui.plugins` 入口组发现。完整接口和示例见
 [`docs/plugin-development.md`](docs/plugin-development.md)。
 
+主窗口的“视图 → 插件管理”提供发现、加载、卸载和错误诊断。插件加载失败会回滚已经创建的 Dock；刷新插件不会直接丢失已加载实例。
+
 VTK、LMDB、REST 等业务功能不属于核心模板，应作为独立插件安装。
 
 ## 验证

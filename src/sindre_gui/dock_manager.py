@@ -24,7 +24,7 @@ class DockManager:
         return area
 
     def add(self, name: str, widget: QWidget, direction: str = "Right", area=None):
-        """Add a widget to a dock area."""
+        """Add a widget and return the owned dock widget."""
         directions = {
             "Left": ads.DockWidgetArea.LeftDockWidgetArea,
             "Right": ads.DockWidgetArea.RightDockWidgetArea,
@@ -34,7 +34,11 @@ class DockManager:
         dock = ads.CDockWidget(name)
         dock.setWidget(widget)
         dock.setMinimumSizeHintMode(ads.CDockWidget.MinimumSizeHintFromDockWidget)
-        return self._manager.addDockWidget(directions[direction], dock, area)
+        if area is None:
+            self._manager.addDockWidget(directions[direction], dock)
+        else:
+            self._manager.addDockWidget(directions[direction], dock, area)
+        return dock
 
     def save_layout(self, name: str) -> None:
         """Save a named layout perspective."""

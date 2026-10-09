@@ -1,23 +1,31 @@
-"""Plugin contracts and runtime context."""
+"""Plugin contracts and the host services exposed to plugins."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from logging import Logger
 from typing import Protocol
 
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QMainWindow, QWidget
+
+Dock = QWidget
+AddDock = Callable[[str, QWidget], Dock]
+RemoveDock = Callable[[Dock], None]
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class PluginContext:
-    """Services exposed to a loaded plugin."""
+    """Restricted host services available to one plugin instance."""
 
-    main_window: QWidget
-    add_dock: object
+    main_window: QMainWindow
+    add_dock: AddDock
+    remove_dock: RemoveDock
+    logger: Logger
 
 
 class GuiPlugin(Protocol):
-    """Minimal contract implemented by an external GUI plugin."""
+    """Runtime contract implemented by an external GUI plugin."""
 
     name: str
     version: str
@@ -27,7 +35,7 @@ class GuiPlugin(Protocol):
         """Create the plugin's main widget."""
 
     def on_load(self, context: PluginContext) -> None:
-        """Run after the plugin has been registered."""
+        """Initialize the plugin and register its UI with the host."""
 
     def on_unload(self) -> None:
-        """Release plugin resources."""
+        """Release all plugin-owned resources."""

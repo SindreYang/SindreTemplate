@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from PyQt5.QtCore import QSignalBlocker
 from PyQt5.QtWidgets import (
     QComboBox,
@@ -13,6 +15,7 @@ from PyQt5.QtWidgets import (
 )
 
 from .dock_manager import DockManager
+from .plugin_dialog import PluginManagerDialog
 from .plugin_interface import PluginContext
 from .plugin_manager import PluginManager
 from .ui.generated.mainwindow import Ui_MainWindow
@@ -29,16 +32,36 @@ class MainWindow(QMainWindow):
         self.docks = DockManager(self)
         self.docks.set_central("工作区", QPlainTextEdit())
         self._setup_layout_toolbar()
-        self.plugin_manager = PluginManager(PluginContext(self, self.add_plugin_dock))
+        self.plugin_manager = PluginManager(
+            PluginContext(
+                self,
+                self.add_plugin_dock,
+                self.remove_plugin_dock,
+                logging.getLogger("sindre_gui"),
+            )
+        )
         self.plugin_manager.discover()
+        plugin_action = self.ui.menuView.addAction("插件管理")
+        plugin_action.triggered.connect(self.show_plugin_manager)
 
     def add_plugin_dock(self, name: str, widget) -> object:
         """Add a plugin widget and expose its visibility in the View menu."""
-        area = self.docks.add(name, widget)
-        dock = area.currentDockWidget() if hasattr(area, "currentDockWidget") else None
-        if dock is not None:
-            self.ui.menuView.addAction(dock.toggleViewAction())
-        return area
+        dock = self.docks.add(name, widget)
+        self.ui.menuView.addAction(dock.toggleViewAction())
+        return dock
+
+    def remove_plugin_dock(self, dock) -> None:
+        """Close and delete a dock created by a plugin."""
+        if dock is None:
+            return
+        self.ui.menuView.removeAction(dock.toggleViewAction())
+        dock.close()
+        dock.deleteLater()
+
+    def show_plugin_manager(self) -> None:
+        """Open the plugin administration dialog."""
+        dialog = PluginManagerDialog(self.plugin_manager, self)
+        dialog.exec_()
 
     def _setup_layout_toolbar(self) -> None:
         self._perspectives = QComboBox(self)
