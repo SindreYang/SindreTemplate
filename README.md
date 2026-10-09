@@ -10,6 +10,10 @@ cmake --build build --config RelWithDebInfo
 ctest --test-dir build --output-on-failure -C RelWithDebInfo
 ```
 
+成功后你会得到一个最小示例程序 `sindre_template_example`，并看到
+`sindre_template_example_runs` 测试通过。这个小程序的意义是先确认编译器、
+标准库和 CMake 环境都正常，再开始添加自己的业务代码。
+
 可选能力通过 CMake 选项开启：
 
 ```powershell
@@ -64,6 +68,8 @@ cmake --build build-vtk --config RelWithDebInfo
 
 - `CMAKE_CXX_COMPILER` 找不到：安装编译器或打开正确的开发者命令行。
 - Windows SDK 找不到：在 Visual Studio Installer 中安装对应 Windows 10/11 SDK。
+- Visual Studio 生成器找不到 SDK：打开 **x64 Native Tools Command Prompt**，或显式使用
+  Ninja，并确保 `cl.exe`、Windows SDK 和 `ninja` 都在当前环境中。
 - VTK 找不到：关闭 `SINDRE_BUILD_VTK_DEMO`，或配置 `CMAKE_PREFIX_PATH` 指向 VTK 安装目录。
 
 ## 目录
@@ -71,6 +77,7 @@ cmake --build build-vtk --config RelWithDebInfo
 ```text
 CMakeLists.txt       顶层项目和可选项
 cpp/                 C++ 子项目
+cpp/main.cpp         可立即运行的最小示例
 cpp/vtk_demo/        可选 VTK 示例
 build/               构建目录，不提交
 ```
