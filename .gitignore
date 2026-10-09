@@ -6,6 +6,8 @@
 *.lo
 *.o
 *.obj
+build/
+bin/
 
 # Precompiled Headers
 *.gch
@@ -15,4 +17,6 @@
 # Fortran module files
 *.mod
 *.smod
+
+compile_commands.json
 
