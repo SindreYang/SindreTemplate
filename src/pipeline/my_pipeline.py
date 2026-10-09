@@ -3,7 +3,10 @@ import torch
 from lightning_fabric.loggers import TensorBoardLogger
 from torch import nn
 from tqdm import tqdm
-from torchsummary import summary
+try:
+    from torchsummary import summary
+except ImportError:
+    summary = None
 
 from src.utils import get_logger
 from torchmetrics import Accuracy, Dice
@@ -80,7 +83,8 @@ class MyPipeline:
 
         # 默认记录net结构
         self.tb_log.log_graph(self.net.cpu(), torch.randn(tuple(net_input_size)))
-        summary(self.net.cpu(), input_size=tuple(net_input_size[1:]), device='cpu')
+        if summary is not None:
+            summary(self.net.cpu(), input_size=tuple(net_input_size[1:]), device='cpu')
 
         # 启动Fabric，覆盖当前变量
         self.fabric.launch()
