@@ -36,3 +36,10 @@ templates:
     purpose: PyQt5 桌面应用与插件系统模板
     status: migrated
     verify: uv sync --extra dev && uv run pytest && uv run sindre-gui
+  sindrejs:
+    branch: template/sindrejs
+    source: SindreYang/SindreJS-official-site
+    language: typescript
+    purpose: SindreJS TypeScript/Bun 工具库与 Next.js 官网模板
+    status: migrated
+    verify: bun install --frozen-lockfile && bun run check && bun test && bun run build
