@@ -29,3 +29,10 @@ templates:
     purpose: 最小可发布 Python 项目模板
     status: migrated
     verify: uv sync && uv run pytest
+  pyqt:
+    branch: template/pyqt
+    source: SindreYang/SindreGui
+    language: python
+    purpose: PyQt5 桌面应用与插件系统模板
+    status: migrated
+    verify: uv sync --extra dev && uv run pytest && uv run sindre-gui
