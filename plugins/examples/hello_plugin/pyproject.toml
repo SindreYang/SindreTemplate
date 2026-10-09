@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sindre-gui-hello-plugin"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["sindre-gui"]
+
+[project.entry-points."sindre_gui.plugins"]
+hello = "hello_plugin:plugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hello_plugin"]
