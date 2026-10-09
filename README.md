@@ -107,3 +107,6 @@ pip install -e .
 
 <br>
 
+# 迁移说明
+
+本模板已迁移并重构至 [`SindreTemplate`](https://github.com/SindreYang/SindreTemplate/tree/template/pytorch-hydra) 的 `template/pytorch-hydra` 分支。该仓库保留历史记录，不再作为新项目的推荐起点。
