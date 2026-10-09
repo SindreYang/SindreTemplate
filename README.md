@@ -32,6 +32,19 @@ pyproject.toml uv 项目配置
 
 模型权重、真实数据集、日志和构建结果不提交到仓库。
 
+数据目录必须使用下面的对应结构，标签文件使用从 1 开始的整数类别编号：
+
+```text
+datasets/torch_datasets/
+├── sources/
+│   └── sample_001.pts
+└── targets/
+    └── sample_001.seg
+```
+
+`.pts` 每行至少包含 `x y z` 三个浮点数；`.seg` 必须与点数量一致。
+训练集会随机采样和增强，验证集使用确定性采样且不做增强。
+
 ## 适合谁？
 
 如果你需要反复进行实验、保存配置、切换数据集和模型，并希望同一套代码支持 CPU、GPU、多 GPU 或混合精度，这个模板可以作为训练项目起点。
@@ -85,3 +98,26 @@ uv run tensorboard --logdir logs
 - Lightning Fabric 统一处理设备、混合精度和多卡入口。
 - Hydra 支持命令行覆盖参数和批量实验。
 - uv 锁定依赖，减少“换机器就不能运行”的问题。
+
+## 训练和断点恢复
+
+每个 epoch 都会保存当前检查点，并在指标改善时额外保存最佳检查点：
+
+```text
+logs/runs/<name>/<version>/models/
+├── last_*.pt
+├── best_train_*.pt
+└── best_*.pt
+```
+
+检查点包含模型参数、优化器状态、epoch、global step、最佳损失和解析后的配置，
+因此可以使用同一配置继续训练。没有真实数据时，先运行：
+
+```powershell
+uv run pytest
+uv run ruff check .
+```
+
+默认关闭性能分析和 TensorBoard 图结构追踪；点云可视化每个验证 epoch 默认只记录
+一个 batch，避免日志无限膨胀。需要图结构追踪时，在
+`configs/my_envs/default.yaml` 中设置 `log_graph: true`。

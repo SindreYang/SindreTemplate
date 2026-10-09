@@ -1,15 +1,11 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.parallel
-import torch.utils.data
-from torch.autograd import Variable
 
 
 class STN3d(nn.Module):
     def __init__(self, channel):
-        super(STN3d, self).__init__()
+        super().__init__()
         self.conv1 = torch.nn.Conv1d(channel, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
@@ -21,8 +17,9 @@ class STN3d(nn.Module):
         self.bn1 = nn.BatchNorm1d(64)
         self.bn2 = nn.BatchNorm1d(128)
         self.bn3 = nn.BatchNorm1d(1024)
-        self.bn4 = nn.BatchNorm1d(512)
-        self.bn5 = nn.BatchNorm1d(256)
+        # LayerNorm also works for inference and training with batch size 1.
+        self.norm4 = nn.LayerNorm(512)
+        self.norm5 = nn.LayerNorm(256)
 
     def forward(self, x):
         batchsize = x.size()[0]
@@ -32,14 +29,11 @@ class STN3d(nn.Module):
         x = torch.max(x, 2, keepdim=True)[0]
         x = x.view(-1, 1024)
 
-        x = F.relu(self.bn4(self.fc1(x)))
-        x = F.relu(self.bn5(self.fc2(x)))
+        x = F.relu(self.norm4(self.fc1(x)))
+        x = F.relu(self.norm5(self.fc2(x)))
         x = self.fc3(x)
 
-        iden = Variable(torch.from_numpy(np.array([1, 0, 0, 0, 1, 0, 0, 0, 1]).astype(np.float32))).view(1, 9).repeat(
-            batchsize, 1)
-        if x.is_cuda:
-            iden = iden.cuda()
+        iden = torch.eye(3, device=x.device, dtype=x.dtype).view(1, 9).expand(batchsize, -1)
         x = x + iden
         x = x.view(-1, 3, 3)
         return x
@@ -47,7 +41,7 @@ class STN3d(nn.Module):
 
 class STNkd(nn.Module):
     def __init__(self, k=64):
-        super(STNkd, self).__init__()
+        super().__init__()
         self.conv1 = torch.nn.Conv1d(k, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
@@ -59,8 +53,8 @@ class STNkd(nn.Module):
         self.bn1 = nn.BatchNorm1d(64)
         self.bn2 = nn.BatchNorm1d(128)
         self.bn3 = nn.BatchNorm1d(1024)
-        self.bn4 = nn.BatchNorm1d(512)
-        self.bn5 = nn.BatchNorm1d(256)
+        self.norm4 = nn.LayerNorm(512)
+        self.norm5 = nn.LayerNorm(256)
 
         self.k = k
 
@@ -72,14 +66,13 @@ class STNkd(nn.Module):
         x = torch.max(x, 2, keepdim=True)[0]
         x = x.view(-1, 1024)
 
-        x = F.relu(self.bn4(self.fc1(x)))
-        x = F.relu(self.bn5(self.fc2(x)))
+        x = F.relu(self.norm4(self.fc1(x)))
+        x = F.relu(self.norm5(self.fc2(x)))
         x = self.fc3(x)
 
-        iden = Variable(torch.from_numpy(np.eye(self.k).flatten().astype(np.float32))).view(1, self.k * self.k).repeat(
-            batchsize, 1)
-        if x.is_cuda:
-            iden = iden.cuda()
+        iden = torch.eye(self.k, device=x.device, dtype=x.dtype).view(1, self.k * self.k).expand(
+            batchsize, -1
+        )
         x = x + iden
         x = x.view(-1, self.k, self.k)
         return x
@@ -87,7 +80,7 @@ class STNkd(nn.Module):
 
 class PointNetEncoder(nn.Module):
     def __init__(self, global_feat=True, feature_transform=False, channel=3):
-        super(PointNetEncoder, self).__init__()
+        super().__init__()
         self.stn = STN3d(channel)
         self.conv1 = torch.nn.Conv1d(channel, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
@@ -135,9 +128,7 @@ class PointNetEncoder(nn.Module):
 
 def feature_transform_reguliarzer(trans):
     d = trans.size()[1]
-    identity = torch.eye(d)[None, :, :]
-    if trans.is_cuda:
-        identity = identity.cuda()
+    identity = torch.eye(d, device=trans.device, dtype=trans.dtype)[None, :, :]
     loss = torch.mean(
         torch.norm(torch.bmm(trans, trans.transpose(2, 1)) - identity, dim=(1, 2))
     )
@@ -164,7 +155,7 @@ class MyNet(nn.Module):
             output_class: int = 10,
     ):
         super().__init__()
-        self.output_class =output_class
+        self.output_class = output_class
         self.feat = PointNetEncoder(global_feat=False, feature_transform=True, channel=encoder_channel)
         self.conv1 = torch.nn.Conv1d(1088, hidden_size, 1)
         self.conv2 = torch.nn.Conv1d(hidden_size, hidden_size // 2, 1)

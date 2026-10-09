@@ -4,7 +4,7 @@
 name: "pointnet_segmentation"
 version: "1.0.0"
 description: "实验描述，方便记录当前实验方式和细节"
-openPerformanceTest: true # 是否开启性能测试
+openPerformanceTest: false # 是否开启性能测试；训练前建议先关闭
 
 
 # 在此指定默认训练配置

@@ -1,87 +1,122 @@
-import os
+"""Hydra entry point for reproducible point-cloud training."""
+
+from __future__ import annotations
+
+from pathlib import Path
 
 import hydra
-from lightning_fabric import fabric
-from lightning_fabric.loggers import TensorBoardLogger
-from omegaconf import DictConfig
+from lightning.fabric import seed_everything
+from lightning.fabric.loggers import TensorBoardLogger
+from omegaconf import DictConfig, OmegaConf
 from tqdm import trange
 
+from src.pipeline.my_pipeline import MyPipeline
 from src.utils import get_logger, seed_torch
 
 log = get_logger(__name__)
 
 
+def _absolute_path(original_cwd: str, value: str) -> Path:
+    path = Path(value).expanduser()
+    return path if path.is_absolute() else Path(original_cwd) / path
+
+
 @hydra.main(version_base=None, config_path="configs", config_name="experiment.yaml")
-def main(config_global: DictConfig):
-    """
-
-    """
-    log.info(f"name: {config_global.name} version: {config_global.version} description: {config_global.description} ")
-    # 初始化个性环境
+def main(config_global: DictConfig) -> None:
+    """Create data, model, logger, and a resumable training loop."""
+    original_cwd = hydra.utils.get_original_cwd()
     config = config_global.my_envs
+    config.datamodule.data_dir = str(_absolute_path(original_cwd, config.datamodule.data_dir))
+    seed = int(config.train.seed)
+    seed_torch(seed)
+    seed_everything(seed, workers=True)
+    log.info("Experiment: %s/%s", config_global.name, config_global.version)
 
-    # 在pytorch，numpy和python中设置随机数生成器的种子
-    seed_torch(config.train.get("seed"))
-    fabric.seed_everything(config.train.get("seed"))
-    log.info(f"seed is : <{config.train.get('seed')}>")
+    train_dataset = hydra.utils.instantiate(config.datamodule, mode="train")
+    val_dataset = hydra.utils.instantiate(config.datamodule, mode="val")
+    train_loader = train_dataset.train_dataloader()
+    val_loader = val_dataset.val_dataloader()
 
-    # 必要时将相对ckpt路径转换为绝对路径
-    config.train.resume_from_checkpoint = os.path.join(
-        hydra.utils.get_original_cwd(), config.train.get("resume_from_checkpoint")
-    )
-    log.info(f"pretrained model path: <{config.train.resume_from_checkpoint}>")
+    log_dir = _absolute_path(original_cwd, f"logs/runs/{config_global.name}/{config_global.version}")
+    tb_logger = TensorBoardLogger(root_dir=str(log_dir), name="tensorboard", flush_secs=10)
+    log.info("TensorBoard log directory: %s", tb_logger.log_dir)
 
-    # 初始化数据加载器
-    log.info(f"Initialize the DataModule: <{config.datamodule._target_}>\t path: <{config.datamodule.data_dir}>")
-    train_dataloader = hydra.utils.instantiate(config.datamodule, mode="train").train_dataloader()
-    # hydra.utils.instantiate(config.datamodule, mode="train")[0] # 测试数据__getter__函数是否正确
-    val_dataloader = hydra.utils.instantiate(config.datamodule, mode="val").val_dataloader()
+    train: MyPipeline = hydra.utils.instantiate(config.pipeline, TensorBoardLog=tb_logger)
+    resume_path = _absolute_path(original_cwd, config.train.resume_from_checkpoint)
+    checkpoint = train.load_model(resume_path)
+    start_epoch = int(checkpoint.get("epoch", -1)) + 1
+    best_train_loss = float(checkpoint.get("best_train_loss", float("inf")))
+    best_val_loss = float(checkpoint.get("best_val_loss", float("inf")))
+    global_step = int(checkpoint.get("global_step", 0))
 
-    # 初始化流程加载器
-    log.info(f"Initialize the Trainer <{config.pipeline._target_}>")
-    tb_logger = TensorBoardLogger(root_dir=f"logs/runs/{config_global.name}/{config_global.version}/",
-                                  name="TensorBoardLogger",flush_secs=10)
-    log.info(
-        f"From the command line, use <\t tensorboard --logdir={os.path.abspath(tb_logger.log_dir)} \t> to view the current TensorBoard record.")
-    train = hydra.utils.instantiate(config.pipeline, TensorBoardLog=tb_logger)
-
-    # 测试训练性能
     if config_global.openPerformanceTest:
-        log.info("start performance test!")
-        train.analytical_performance(
-            hydra.utils.instantiate(config.datamodule, mode="test_performance").train_dataloader())
+        performance_dataset = hydra.utils.instantiate(config.datamodule, mode="test_performance")
+        train.analytical_performance(performance_dataset.train_dataloader())
 
-    # 训练模型
-    log.info("start training!")
-    train.load_model(load_path=config.train.resume_from_checkpoint)
-    epochs = config.train.epochs
-    check_train_loss = 1e4
-    check_val_loss = 1e4
-    with trange(epochs, colour="red") as t:
-        for epoch in t:
-            t.set_description(f"总进度 Epoch {epoch}/{epochs} :")
-            train_acc, train_loss = train.training(train_dataloader)
-            val_acc, val_loss = train.validation(val_dataloader)
-            t.set_postfix(train_loss=format(train_loss, '.3f'), train_acc=format(train_acc, '.3f'),
-                          val_loss=format(train_loss, '.3f'), val_acc=format(val_acc, '.3f'))
-            # 记录到日志
-            log.info(f"Epoch {epoch}/{epochs} : train_loss={train_loss} train_acc={train_acc} "
-                     f"val_loss={val_loss}  val_acc={val_acc}")
-            # 记录到tb
-            tb_logger.log_metrics({"train_loss": train_loss, "train_acc": train_acc,
-                                   "val_loss": val_loss, "val_acc": val_acc}, step=epoch)
+    epochs = int(config.train.epochs)
+    last_path = _absolute_path(original_cwd, config.train.resume_from_checkpoint)
+    best_train_path = _absolute_path(original_cwd, config.train.best_train_ckpt_path)
+    best_val_path = _absolute_path(original_cwd, config.train.ckpt_path)
+    config_dict = OmegaConf.to_container(config_global, resolve=True)
 
-            # 保存模型
-            if train_loss < check_train_loss:
-                train.save_model(save_path=config.train.get("resume_from_checkpoint"), new_loss=train_loss)
-                check_train_loss = train_loss
-            if val_loss < check_val_loss:
-                train.save_model(save_path=config.train.get("ckpt_path"), new_loss=val_loss)
-                check_val_loss = val_loss
+    for epoch in trange(start_epoch, epochs, desc="训练进度", colour="red"):
+        train_acc, train_loss = train.training(train_loader)
+        val_acc, val_loss = train.validation(val_loader, epoch=epoch)
+        global_step += len(train_loader)
 
-    # 确保一切正常关闭
-    log.info("Finalizing!")
-    tb_logger.finalize("Finalizing")
+        log.info(
+            "Epoch %d/%d: train_loss=%.6f train_acc=%.4f val_loss=%.6f val_acc=%.4f",
+            epoch + 1,
+            epochs,
+            train_loss,
+            train_acc,
+            val_loss,
+            val_acc,
+        )
+        tb_logger.log_metrics(
+            {
+                "train_loss": train_loss,
+                "train_acc": train_acc,
+                "val_loss": val_loss,
+                "val_acc": val_acc,
+            },
+            step=global_step,
+        )
+
+        # last.ckpt is always current; best checkpoints are independent files.
+        train.save_model(
+            last_path,
+            val_loss,
+            epoch=epoch,
+            global_step=global_step,
+            best_train_loss=min(best_train_loss, train_loss),
+            best_val_loss=min(best_val_loss, val_loss),
+            config=config_dict,
+        )
+        if train_loss < best_train_loss:
+            best_train_loss = train_loss
+            train.save_model(
+                best_train_path,
+                train_loss,
+                epoch=epoch,
+                global_step=global_step,
+                best_train_loss=best_train_loss,
+                best_val_loss=best_val_loss,
+                config=config_dict,
+            )
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            train.save_model(
+                best_val_path,
+                val_loss,
+                epoch=epoch,
+                global_step=global_step,
+                best_train_loss=best_train_loss,
+                best_val_loss=best_val_loss,
+                config=config_dict,
+            )
+
+    tb_logger.finalize("success")
 
 
 if __name__ == "__main__":
