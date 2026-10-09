@@ -1,80 +1,83 @@
-# SindreTemplate
+# SindreJS Template
 
-SindreTemplate 是一组可以直接拿来开始开发的项目模板。
+这是 `SindreTemplate` 的 `template/sindrejs` 分支：一个可直接复用的
+SindreJS TypeScript/Bun 库与 Next.js 官方网站模板。它保留库源码、测试、
+文档和 `examples/official-site`，新项目可以从这个分支开始开发自己的库和官网。
 
-你不需要先搭建目录、配置测试、编写 CI 或猜测启动命令；选择一个模板、创建分支工作树，然后按对应 README 操作即可。
+模板初始化：
 
-## 我应该选哪个模板？
-
-| 模板 | 适合做什么 | 分支 |
-| --- | --- | --- |
-| PyTorch Hydra | 深度学习训练、实验管理、多 GPU、混合精度和 TensorBoard | `template/pytorch-hydra` |
-| CMake C++ | 跨平台 C++ 库、命令行工具和可选第三方能力 | `template/cmake` |
-| Flask | 带健康检查、上传接口和模型后端的 Python 服务 | `template/flask` |
-| Python Project | 普通 Python 库、命令行工具和业务项目 | `template/project` |
-| PyQt | Windows/Linux 桌面 GUI、Dock 窗口和插件系统 | `template/pyqt` |
-
-完整清单见 [`templates.yaml`](templates.yaml)。每个模板分支都有独立的 README、依赖和验证命令。
-
-## 最简单的用法：直接创建项目
-
-如果你只想开始一个新项目，直接克隆目标分支：
-
-```powershell
-git clone --branch template/project --single-branch https://github.com/SindreYang/SindreTemplate.git my-project
-cd my-project
-uv sync
-uv run pytest
+```sh
+bun install
+bun run check
+bun test
+bun run build
+cd examples/official-site
+npm install
+npm run check
+npm run build
 ```
 
-把 `template/project` 换成你需要的分支即可。
+网站中的管理后台、文章、3D 页面和 API 路由是示例能力；部署前请替换站点
+名称、鉴权密钥、存储配置和示例数据。不要提交 `.env*`、`.next`、`dist` 或
+本地依赖目录。
 
-## 开发模板本身：使用 Git worktree
+面向浏览器、Node.js 和 Bun 的 TypeScript 工具库。Bun 用于开发和测试；`general` 根据扩展名和运行环境选择读写器。
 
-如果你要同时维护多个模板，推荐使用独立工作树：
+| 入口 | 用途 |
+| --- | --- |
+| `sindrejs` | `load_module()` 全局惰性加载器、`lazy_module()` 与 `lazy_keyed()` 包装器 |
+| `sindrejs/general` | 自动读写（含 `.env`）、Axios 请求与传输、Pino 日志、ZIP、加解密、SSE、流式任务生命周期与异步工具；不主动加载 3D/ONNX |
+| `sindrejs/general/3d` | 显式启用 Three.js 的 GLB/GLTF/PLY/STL/OBJ 读写，避免普通 Webpack 入口扫描 3D 依赖 |
+| `sindrejs/utils2d` | Canvas 2D 标注几何与绘制 |
+| `sindrejs/utils3d` | Three.js 模型/场景工具、样条、表面路径与局部塑形 |
+| `sindrejs/utils3d/react` | React Three Fiber 场景和 Drei 模型、控制器、辅助组件 |
+| `sindrejs/ai` | AI 聚合入口；前端按单一引擎使用时优先选择下面的明确子入口 |
+| `sindrejs/ai/mediapipe` | MediaPipe Tasks Vision |
+| `sindrejs/ai/mediapipe/audio` | MediaPipe Tasks Audio |
+| `sindrejs/ai/mediapipe/text` | MediaPipe Tasks Text |
+| `sindrejs/ai/mediapipe/genai` | MediaPipe Tasks GenAI |
+| `sindrejs/ai/tfjs` | TensorFlow.js 推理 |
+| `sindrejs/ai/onnx/web`、`sindrejs/ai/onnx/node` | ONNX Runtime Web / Node |
+| `sindrejs/utilsui/react` | shadcn/ui Provider、React 通知与状态组件 |
+| `sindrejs/utilsui/toast` | Sonner 操作通知 |
+| `sindrejs/utilsui/progress` | NProgress 顶部进度条与异步任务跟踪 |
+| `sindrejs/utilsui/video` | Vidstack 统一视频播放器，字幕、封面和流媒体 |
+| `sindrejs/utilsui/widgets` | 对话框、圆形容错头像、复制按钮与状态 hooks |
+| `sindrejs/utilsui/dialog` | 复用对话框的确认与输入请求队列 |
+| `sindrejs/utilsui/canvas` | Canvas/WebGL 容器尺寸、像素比例和指针坐标 |
+| `sindrejs/utilsui/panel` | 桌面侧栏与窄屏对话框切换 |
+| `sindrejs/utilsui/list` | 分页请求、无限滚动与分页控件 |
+| `sindrejs/utilsui/markdown` | Tailwind Markdown、代码块与空状态组件 |
+| `sindrejs/utilsui/markdown/lite` | 不依赖 Markdown 生态的轻量预览，适合后台和日志 |
+| `sindrejs/utilsui/dnd` | dnd-kit 可排序列表和底层拖放 API |
+| `sindrejs/utilsui/swiper` | Swiper React 轮播、导航、分页与响应式布局 |
+| `sindrejs/utilsagent` | LangChain 消息、多模态 Agent、流式与 SSE |
+| `sindrejs/utilsagent/sse` | 不依赖 LangChain 的 SSE 响应封装 |
 
-```powershell
-git clone https://github.com/SindreYang/SindreTemplate.git SindreTemplate
-cd SindreTemplate
-git worktree add ..\SindreTemplate-pyqt template/pyqt
-git worktree add ..\SindreTemplate-cmake template/cmake
+先读 [docs/README.md](docs/README.md) 了解目录分工、运行环境和限制。安装并检查：
+
+可运行的 Next.js 前后端官网示例见 [examples/official-site](examples/official-site/README.md)。
+
+```sh
+bun install
+bun run check
+bun run check:isolated
+bun test
+bun run build
 ```
 
-这样每个模板有独立目录和分支，但共享同一个 Git 历史，不会互相覆盖文件。
+当前最小安装有 6 个运行时直接依赖：`axios`、`clsx`、`fflate`、`pino`、`pino-roll`、`tailwind-merge`。React、Lucide、Three.js、Sonner、Vidstack、AI 引擎等是可选 peer dependency，只安装实际使用的入口。例如使用常规 React UI 组件安装 `lucide-react`，使用 3D 入口安装 `three`，浏览器 ONNX 安装 `onnxruntime-web`。
 
-也可以使用管理脚本：
+前端项目请优先直接导入明确入口，例如 `sindrejs/general`、`sindrejs/general/3d`、`sindrejs/ai/onnx/web` 或 `sindrejs/utilsui/panel`；`sindrejs/ai` 是聚合 API，适合需要多个 AI 后端的应用，不应作为普通单引擎页面的默认入口。
 
-```powershell
-.\tools\list-templates.ps1
-.\tools\worktree.ps1 add pyqt ..\SindreTemplate-pyqt
+安装：
+
+```sh
+npm install sindrejs
 ```
 
-## 统一约定
-
-- Python 模板使用 `uv`，不要求把依赖安装到全局 Python。
-- C++ 模板使用 CMake，构建目录与源码逻辑分离。
-- 每个模板都必须能从全新克隆完成安装、测试和最小启动验证。
-- README 必须说明安装、运行、测试和常见错误处理。
-- 真实数据、模型权重、凭据、开发机绝对路径和构建产物不进入模板。
-
-## 常见问题
-
-### `uv` 找不到
-
-先安装 uv，然后重新打开终端：
-
-```powershell
-irm https://astral.sh/uv/install.ps1 | iex
+```ts
+import { load_module } from "sindrejs";
+const { get_canvas_point } = await load_module("utils2d");
+const { get_face_detector } = await load_module("ai");
 ```
-
-### 我只想复制模板，不想保留模板分支
-
-使用目标分支克隆即可。项目创建后，可以按自己的需求修改 README、项目名和包名。
-
-### 模板能不能混用？
-
-可以，但不要把多个模板目录直接合并。建议选择一个模板作为根项目，再按需复制其中的配置或组件。
-
-## 许可证
-
-本仓库和各模板均采用 MIT 许可，详见根目录 `LICENSE` 以及各模板分支中的同名文件。

@@ -1,0 +1,285 @@
+{
+  "name": "sindrejs",
+  "version": "0.1.1",
+  "description": "Modular TypeScript utilities for browser, Node.js, and Bun",
+  "homepage": "https://github.com/SindreYang/SindreJS#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SindreYang/SindreJS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SindreYang/SindreJS/issues"
+  },
+  "keywords": ["typescript", "browser", "node", "bun", "canvas", "three", "onnx", "mediapipe", "react"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist", "README.md", "docs"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./general": {
+      "types": "./dist/general/index.d.ts",
+      "default": "./dist/general/index.js"
+    },
+    "./general/3d": {
+      "types": "./dist/general/io3d.d.ts",
+      "default": "./dist/general/io3d.js"
+    },
+    "./utils2d": {
+      "types": "./dist/utils2d/index.d.ts",
+      "default": "./dist/utils2d/index.js"
+    },
+    "./utils3d": {
+      "types": "./dist/utils3d/index.d.ts",
+      "default": "./dist/utils3d/index.js"
+    },
+    "./utils3d/react": {
+      "types": "./dist/utils3d/react.d.ts",
+      "default": "./dist/utils3d/react.js"
+    },
+    "./ai": {
+      "types": "./dist/ai/index.d.ts",
+      "default": "./dist/ai/index.js"
+    },
+    "./ai/mediapipe": {
+      "types": "./dist/ai/mediapipe.d.ts",
+      "default": "./dist/ai/mediapipe.js"
+    },
+    "./ai/mediapipe/audio": {
+      "types": "./dist/ai/mediapipe_audio.d.ts",
+      "default": "./dist/ai/mediapipe_audio.js"
+    },
+    "./ai/mediapipe/text": {
+      "types": "./dist/ai/mediapipe_text.d.ts",
+      "default": "./dist/ai/mediapipe_text.js"
+    },
+    "./ai/mediapipe/genai": {
+      "types": "./dist/ai/mediapipe_genai.d.ts",
+      "default": "./dist/ai/mediapipe_genai.js"
+    },
+    "./ai/tfjs": {
+      "types": "./dist/ai/tfjs/index.d.ts",
+      "default": "./dist/ai/tfjs/index.js"
+    },
+    "./ai/onnx/web": {
+      "types": "./dist/ai/onnx/web.d.ts",
+      "default": "./dist/ai/onnx/web.js"
+    },
+    "./ai/onnx/node": {
+      "types": "./dist/ai/onnx/node.d.ts",
+      "default": "./dist/ai/onnx/node.js"
+    },
+    "./utilsui/react": {
+      "types": "./dist/utilsui/react.d.ts",
+      "default": "./dist/utilsui/react.js"
+    },
+    "./utilsui/toast": {
+      "types": "./dist/utilsui/toast/index.d.ts",
+      "default": "./dist/utilsui/toast/index.js"
+    },
+    "./utilsui/progress": {
+      "types": "./dist/utilsui/progress/index.d.ts",
+      "default": "./dist/utilsui/progress/index.js"
+    },
+    "./utilsui/video": {
+      "types": "./dist/utilsui/video/index.d.ts",
+      "default": "./dist/utilsui/video/index.js"
+    },
+    "./utilsui/widgets": {
+      "types": "./dist/utilsui/widgets/index.d.ts",
+      "default": "./dist/utilsui/widgets/index.js"
+    },
+    "./utilsui/dialog": {
+      "types": "./dist/utilsui/dialog/index.d.ts",
+      "default": "./dist/utilsui/dialog/index.js"
+    },
+    "./utilsui/canvas": {
+      "types": "./dist/utilsui/canvas/index.d.ts",
+      "default": "./dist/utilsui/canvas/index.js"
+    },
+    "./utilsui/panel": {
+      "types": "./dist/utilsui/panel/index.d.ts",
+      "default": "./dist/utilsui/panel/index.js"
+    },
+    "./utilsui/list": {
+      "types": "./dist/utilsui/list/index.d.ts",
+      "default": "./dist/utilsui/list/index.js"
+    },
+    "./utilsui/markdown": {
+      "types": "./dist/utilsui/markdown.d.ts",
+      "default": "./dist/utilsui/markdown.js"
+    },
+    "./utilsui/markdown/lite": {
+      "types": "./dist/utilsui/markdown/lite.d.ts",
+      "default": "./dist/utilsui/markdown/lite.js"
+    },
+    "./utilsui/dnd": {
+      "types": "./dist/utilsui/dnd/index.d.ts",
+      "default": "./dist/utilsui/dnd/index.js"
+    },
+    "./utilsui/swiper": {
+      "types": "./dist/utilsui/swiper/index.d.ts",
+      "default": "./dist/utilsui/swiper/index.js"
+    },
+    "./utilsagent": {
+      "types": "./dist/utilsagent/index.d.ts",
+      "default": "./dist/utilsagent/index.js"
+    },
+    "./utilsagent/sse": {
+      "types": "./dist/utilsagent/sse.d.ts",
+      "default": "./dist/utilsagent/sse.js"
+    }
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && bunx tsc -p tsconfig.build.json",
+    "check": "bunx tsc --noEmit",
+    "check:isolated": "bunx tsc --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --types node --skipLibCheck tests/fixtures/isolated-consumer.ts",
+    "test": "bun test",
+    "test:node": "bun run build && node -e \"process.env.SINDREJS_TEST_BUILD='1'; Promise.all([import('./tests/core.test.mjs'), import('./tests/adapters.test.mjs')])\""
+  },
+  "peerDependencies": {
+    "@mediapipe/tasks-vision": "*",
+    "@mediapipe/tasks-audio": "*",
+    "@mediapipe/tasks-text": "*",
+    "@mediapipe/tasks-genai": "*",
+    "@tensorflow/tfjs": "*",
+    "onnxruntime-web": "*",
+    "onnxruntime-node": "*",
+    "three": "*",
+    "react": "^18 || ^19",
+    "@react-three/fiber": "^9.0.0",
+    "@react-three/drei": "^10.0.0",
+    "sonner": "^2.0.0",
+    "nprogress": "^0.2.0",
+    "@vidstack/react": "^1.15.6",
+    "lucide-react": "^1.52.0",
+    "tailwindcss": "^4.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "langchain": "^1.5.15",
+    "@langchain/core": "^1.2.14",
+    "@langchain/openai": "^1.6.2",
+    "zod": "^4.6.5",
+    "@dnd-kit/react": "^0.5.0",
+    "swiper": "^14.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@mediapipe/tasks-vision": {
+      "optional": true
+    },
+    "@mediapipe/tasks-audio": {
+      "optional": true
+    },
+    "@mediapipe/tasks-text": {
+      "optional": true
+    },
+    "@mediapipe/tasks-genai": {
+      "optional": true
+    },
+    "@tensorflow/tfjs": {
+      "optional": true
+    },
+    "onnxruntime-web": {
+      "optional": true
+    },
+    "onnxruntime-node": {
+      "optional": true
+    },
+    "three": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "@react-three/drei": {
+      "optional": true
+    },
+    "sonner": {
+      "optional": true
+    },
+    "nprogress": {
+      "optional": true
+    },
+    "@vidstack/react": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "tailwindcss": {
+      "optional": true
+    },
+    "react-markdown": {
+      "optional": true
+    },
+    "remark-gfm": {
+      "optional": true
+    },
+    "langchain": {
+      "optional": true
+    },
+    "@langchain/core": {
+      "optional": true
+    },
+    "@langchain/openai": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    },
+    "@dnd-kit/react": {
+      "optional": true
+    },
+    "swiper": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@dnd-kit/react": "^0.5.0",
+    "@langchain/core": "^1.2.14",
+    "@langchain/openai": "^1.6.2",
+    "@mediapipe/tasks-audio": "^1.0.1",
+    "@mediapipe/tasks-genai": "^0.10.29",
+    "@mediapipe/tasks-text": "^1.0.1",
+    "@mediapipe/tasks-vision": "*",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
+    "@tensorflow/tfjs": "*",
+    "@types/bun": "^1.2.0",
+    "@types/node": "^24.0.0",
+    "@types/nprogress": "^0.2.3",
+    "@types/react": "^19.0.0",
+    "@types/three": "^0.180.0",
+    "@vidstack/react": "^1.15.6",
+    "langchain": "^1.5.15",
+    "lucide-react": "^1.52.0",
+    "nprogress": "^0.2.0",
+    "onnxruntime-node": "*",
+    "onnxruntime-web": "*",
+    "react": "^19.0.0",
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "sonner": "^2.0.8",
+    "swiper": "^14.3.0",
+    "three": "*",
+    "typescript": "^5.9.0",
+    "zod": "^4.6.5"
+  },
+  "dependencies": {
+    "axios": "^1.20.0",
+    "clsx": "^2.1.1",
+    "fflate": "^0.8.3",
+    "pino": "^10.4.0",
+    "pino-roll": "^4.0.0",
+    "tailwind-merge": "^3.7.0"
+  }
+}
