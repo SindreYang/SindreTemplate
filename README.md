@@ -77,4 +77,4 @@ irm https://astral.sh/uv/install.ps1 | iex
 
 ## 许可证
 
-各模板沿用本仓库的 MIT 许可，具体以分支中的许可证文件为准。
+本仓库和各模板均采用 MIT 许可，详见根目录 `LICENSE` 以及各模板分支中的同名文件。
