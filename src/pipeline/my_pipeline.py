@@ -9,7 +9,7 @@ except ImportError:
     summary = None
 
 from src.utils import get_logger
-from torchmetrics import Accuracy, Dice
+from torchmetrics import Accuracy
 from lightning.fabric import Fabric
 
 log = get_logger(__name__)
