@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
 
 from conf.config import app_config, split_config
+from services.logging import configure_logging
+from services.response import error as json_error, success
 
 
 def create_app(config=None) -> Flask:
@@ -25,13 +27,19 @@ def create_app(config=None) -> Flask:
         else:
             app.config.from_object(config)
 
+    configure_logging(app)
+
     cache_dir = app.config["SPLIT_CACHE_DIR"]
     app.config["SPLIT_CACHE_DIR"] = str(cache_dir)
     origins = app.config["CORS_ORIGINS"]
     if isinstance(origins, str):
         origins = [origin.strip() for origin in origins.split(",") if origin.strip()]
     app.config["CORS_ORIGINS"] = origins
-    CORS(app, resources={r"/*": {"origins": origins}})
+    CORS(
+        app,
+        resources={r"/*": {"origins": origins}},
+        send_wildcard=origins == ["*"],
+    )
 
     from routes import init_app
 
@@ -39,24 +47,24 @@ def create_app(config=None) -> Flask:
 
     @app.get("/health")
     def health():
-        return jsonify(status="ok")
+        return success({"status": "ok"})
 
     @app.errorhandler(404)
-    def not_found(error):
-        return jsonify(error="Resource not found"), 404
+    def not_found(_error):
+        return json_error("Resource not found", 404, "not_found")
 
     @app.errorhandler(405)
-    def method_not_allowed(error):
-        return jsonify(error="Method not allowed"), 405
+    def method_not_allowed(_error):
+        return json_error("Method not allowed", 405, "method_not_allowed")
 
     @app.errorhandler(413)
-    def request_too_large(error):
-        return jsonify(error="Uploaded request is too large"), 413
+    def request_too_large(_error):
+        return json_error("Uploaded request is too large", 413, "request_too_large")
 
     @app.errorhandler(500)
-    def internal_error(error):
-        app.logger.exception("Unhandled application error", exc_info=error)
-        return jsonify(error="Internal server error"), 500
+    def internal_error(_error):
+        app.logger.exception("Unhandled application error", exc_info=_error)
+        return json_error("Internal server error", 500, "internal_error")
 
     return app
 

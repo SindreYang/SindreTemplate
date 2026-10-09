@@ -23,14 +23,14 @@ def _int_env(name: str, default: int) -> int:
 
 
 def cors_origins() -> list[str]:
-    """Return a validated comma-separated CORS allow-list."""
-    value = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+    """Return a CORS allow-list; the default accepts requests from any origin."""
+    value = os.environ.get("CORS_ORIGINS", "*")
     origins = [origin.strip() for origin in value.split(",") if origin.strip()]
-    return origins or ["http://localhost:3000"]
+    return origins or ["*"]
 
 
 class app_config:
-    """Safe defaults for local development and deployment."""
+    """本地开发和部署使用的安全默认配置。"""
 
     DEBUG = os.environ.get("FLASK_DEBUG", "0") == "1"
     TESTING = False
@@ -39,6 +39,12 @@ class app_config:
     SPLIT_CACHE_TTL_SECONDS = _int_env("SPLIT_CACHE_TTL_SECONDS", 24 * 60 * 60)
     HOST = os.environ.get("FLASK_HOST", "127.0.0.1")
     PORT = _int_env("FLASK_PORT", 5000)
+    # 日志默认放在项目根目录，便于部署、收集和排查问题。
+    LOG_DIR = os.environ.get("LOG_DIR", str(PROJECT_ROOT / "log"))
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+    # 示例媒体路径只用于演示流式接口，不会自动扫描或暴露其他文件。
+    EXAMPLE_IMAGE_PATH = os.environ.get("EXAMPLE_IMAGE_PATH", str(PROJECT_ROOT / "img.png"))
+    EXAMPLE_VIDEO_PATH = os.environ.get("EXAMPLE_VIDEO_PATH", str(RESOURCE_DIR / "example.mp4"))
 
 
 class split_config:

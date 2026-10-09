@@ -16,6 +16,12 @@ prod = [
   "gunicorn>=23; platform_system != 'Windows'",
   "waitress>=3; platform_system == 'Windows'",
 ]
+mcp = [
+  "mcp[cli]>=2.0,<3.0",
+]
+
+[project.scripts]
+flask-template-mcp = "mcp_server:mcp.run"
 
 [tool.uv]
 default-groups = ["dev"]
