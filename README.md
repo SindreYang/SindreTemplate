@@ -1,45 +1,36 @@
-# SindreTemplate
+# Flask Inference Service Template
 
-SindreTemplate 是一个按 Git 分支组织的开发模板仓库。每个模板保持独立
-的目录结构、依赖和验证流程；本仓库的 `main` 分支只保存模板索引、统一
-规范和工作树管理工具。
+一个带应用工厂、健康检查、文件上传、模型后端隔离和测试的 Flask 服务模板。
+模型权重和具体推理实现不包含在模板中，缺少模型时服务仍可启动，推理请求
+会返回明确的 `503`。
 
-## 模板分支
-
-| 模板 | 分支 | 用途 |
-| --- | --- | --- |
-| PyTorch Hydra | `template/pytorch-hydra` | PyTorch、Hydra、Fabric 实验和训练 |
-| CMake | `template/cmake` | 跨平台 C++/CMake 项目 |
-| Flask | `template/flask` | 可测试的 Flask 推理服务 |
-| Project | `template/project` | 最小 Python 项目 |
-
-完整信息见 [`templates.yaml`](templates.yaml)。
-
-## 使用模板
+## 安装和运行
 
 ```powershell
-git clone https://github.com/SindreYang/SindreTemplate.git
-cd SindreTemplate
-git worktree add ..\SindreTemplate-pytorch template/pytorch-hydra
+uv sync
+uv run pytest
+uv run python app.py
 ```
 
-也可以直接检出某个模板分支：
+检查服务：
 
 ```powershell
-git clone --branch template/pytorch-hydra https://github.com/SindreYang/SindreTemplate.git my-project
+curl http://127.0.0.1:5000/health
 ```
 
-列出模板和创建工作树：
+## 目录
 
-```powershell
-.\tools\list-templates.ps1
-.\tools\worktree.ps1 add pytorch-hydra ..\SindreTemplate-pytorch
+```text
+app.py          应用工厂和启动入口
+conf/           默认配置及模型映射
+models/         推理实现和网格工具
+routes/         HTTP 路由
+services/       可选服务集成
+tests/          隔离测试
+resources/      运行时上传和结果缓存
+pyproject.toml  uv 项目配置
 ```
 
-## 统一约定
-
-- Python 项目使用 `uv` 管理环境和锁文件，不主动修改全局 Python 环境。
-- C++ 项目使用 CMake，构建目录放在源码树外。
-- 模板必须能从全新克隆目录完成安装、测试和最小启动验证。
-- 开发机路径、私有模型、凭据和大体积构建产物不得进入模板。
-- 每个模板分支的 README 必须说明安装、运行、测试和目录结构。
+上传接口默认限制网格文件类型和大小，每个任务使用独立缓存目录，避免并发
+请求互相覆盖。生产部署时请通过配置设置 `CORS_ORIGINS`，并使用 WSGI/进程
+管理器启动服务。
