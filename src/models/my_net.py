@@ -1,12 +1,10 @@
-from torch import nn
-
+import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.nn.parallel
 import torch.utils.data
 from torch.autograd import Variable
-import numpy as np
-import torch.nn.functional as F
 
 
 class STN3d(nn.Module):
@@ -137,10 +135,12 @@ class PointNetEncoder(nn.Module):
 
 def feature_transform_reguliarzer(trans):
     d = trans.size()[1]
-    I = torch.eye(d)[None, :, :]
+    identity = torch.eye(d)[None, :, :]
     if trans.is_cuda:
-        I = I.cuda()
-    loss = torch.mean(torch.norm(torch.bmm(trans, trans.transpose(2, 1)) - I, dim=(1, 2)))
+        identity = identity.cuda()
+    loss = torch.mean(
+        torch.norm(torch.bmm(trans, trans.transpose(2, 1)) - identity, dim=(1, 2))
+    )
     return loss
 
 

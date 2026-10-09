@@ -1,10 +1,12 @@
 import os
+
 import hydra
 from lightning_fabric import fabric
 from lightning_fabric.loggers import TensorBoardLogger
 from omegaconf import DictConfig
 from tqdm import trange
-from src.utils import seed_torch, get_logger
+
+from src.utils import get_logger, seed_torch
 
 log = get_logger(__name__)
 

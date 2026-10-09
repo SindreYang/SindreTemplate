@@ -1,16 +1,19 @@
 import os
+
 import torch
 from lightning_fabric.loggers import TensorBoardLogger
 from torch import nn
 from tqdm import tqdm
+
 try:
     from torchsummary import summary
 except ImportError:
     summary = None
 
-from src.utils import get_logger
-from torchmetrics import Accuracy
 from lightning.fabric import Fabric
+from torchmetrics import Accuracy
+
+from src.utils import get_logger
 
 log = get_logger(__name__)
 
@@ -104,7 +107,7 @@ class MyPipeline:
         total_loss = 0
 
         # 进度条
-        with tqdm(dataset_loader, desc=f'训练 : ', colour="blue", leave=False) as t:
+        with tqdm(dataset_loader, desc='训练 : ', colour="blue", leave=False) as t:
             for batch in t:
                 # 开始迭代
                 self.optim.zero_grad()
@@ -127,7 +130,7 @@ class MyPipeline:
         self.net.eval()
         total_loss = 0
         with torch.no_grad():
-            with tqdm(dataset_loader, desc=f'验证 : ', colour="green", leave=False) as t:
+            with tqdm(dataset_loader, desc='验证 : ', colour="green", leave=False) as t:
                 for step,batch in enumerate(t):
                     loss, pred, targets = self.step(batch)
                     acc = self.val_acc(pred, targets)
@@ -244,7 +247,7 @@ class MyPipeline:
                 record_shapes=True,
                 with_stack=True) as profiler:
             # 只取一个数据作为测试对象
-            with tqdm(dataset_loader, desc=f'性能测试 : ', colour="YELLOW", leave=False) as t:
+            with tqdm(dataset_loader, desc='性能测试 : ', colour="YELLOW", leave=False) as t:
                 for batch in t:
                     # 开始迭代
                     self.optim.zero_grad()

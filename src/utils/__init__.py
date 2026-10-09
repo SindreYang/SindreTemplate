@@ -1,8 +1,9 @@
 import logging
+import os
 import random
+
 import numpy as np
 import torch
-import os
 
 
 def seed_torch(seed=1024):
