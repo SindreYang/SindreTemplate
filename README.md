@@ -45,6 +45,26 @@ uv run python -m sindre_gui.ui.generate
 
 VTK、LMDB、REST 等业务功能不属于核心模板，应作为独立插件安装。
 
+### 异常保护
+
+插件运行时由宿主统一管理：
+
+- 加载失败会显示错误提示、保存 traceback，并清理已创建的 Dock。
+- 插件回调失败会自动停用插件、卸载其 Dock，并提示用户。
+- 卸载异常不会阻止其他资源继续清理。
+- 后台线程错误可以通过 Qt 信号转回主线程显示。
+- 未捕获的应用异常会显示提示并写入日志。
+
+插件连接 Qt 信号时，应使用宿主提供的 `guard` 包装回调：
+
+```python
+button.clicked.connect(
+    context.guard(self.on_clicked, "button click")
+)
+```
+
+Python 层无法隔离 C/C++ 扩展的访问违规、`os._exit()` 或进程级终止。高风险插件应使用独立进程运行。
+
 ## 验证
 
 ```bash
