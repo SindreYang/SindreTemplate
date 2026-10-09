@@ -6,8 +6,10 @@ import logging
 import traceback
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import wraps
 from importlib.metadata import EntryPoint, entry_points
 
+from .errors import ErrorReporter
 from .plugin_interface import GuiPlugin, PluginContext
 
 LOGGER = logging.getLogger(__name__)
@@ -53,8 +55,9 @@ class PluginManager:
     REQUIRED_ATTRIBUTES = ("name", "version", "description")
     REQUIRED_METHODS = ("on_load", "on_unload")
 
-    def __init__(self, context: PluginContext) -> None:
+    def __init__(self, context: PluginContext, reporter: ErrorReporter | None = None) -> None:
         self.context = context
+        self.reporter = reporter
         self.records: dict[str, PluginRecord] = {}
 
     def discover(self) -> list[PluginRecord]:
@@ -107,6 +110,7 @@ class PluginManager:
             self.context.main_window,
             add_dock,
             self.context.remove_dock,
+            lambda callback, operation="callback": self.guard(record.name, callback, operation),
             self.context.logger,
         )
         try:
@@ -122,6 +126,7 @@ class PluginManager:
             record.error = f"{type(exc).__name__}: {exc}"
             record.traceback_text = traceback.format_exc()
             LOGGER.exception("Failed to load plugin %s", name)
+            self._report(name, "load", exc)
             if instance is not None:
                 self._safe_unload(instance, name)
             for dock in reversed(created_docks):
@@ -143,6 +148,7 @@ class PluginManager:
             record.error = f"{type(exc).__name__}: {exc}"
             record.traceback_text = traceback.format_exc()
             LOGGER.exception("Failed to unload plugin %s", name)
+            self._report(name, "unload", exc)
         finally:
             for dock in reversed(record.docks):
                 self._safe_remove_dock(dock, name)
@@ -154,6 +160,25 @@ class PluginManager:
     def loaded_plugins(self) -> list[GuiPlugin]:
         """Return active plugin instances."""
         return [record.plugin for record in self.records.values() if record.loaded and record.plugin]
+
+    def guard(self, name: str, callback, operation: str = "callback"):
+        """Wrap a plugin callback so runtime errors disable only that plugin."""
+
+        @wraps(callback)
+        def protected(*args, **kwargs):
+            try:
+                return callback(*args, **kwargs)
+            except Exception as exc:  # noqa: BLE001 - callback isolation is intentional
+                self._runtime_failure(name, operation, exc)
+                return None
+
+        return protected
+
+    def handle_uncaught_exception(self, exc_type, exc_value, exc_traceback) -> None:
+        """Report an uncaught application exception without hiding it in logs."""
+        error = exc_value if isinstance(exc_value, BaseException) else RuntimeError(str(exc_value))
+        self._report("application", "uncaught exception", error)
+        LOGGER.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
     def _get_record(self, name: str) -> PluginRecord:
         if name not in self.records:
@@ -179,3 +204,19 @@ class PluginManager:
             self.context.remove_dock(dock)
         except Exception:
             LOGGER.exception("Failed to remove dock for plugin %s", name)
+
+    def _runtime_failure(self, name: str, phase: str, error: BaseException) -> None:
+        record = self.records.get(name)
+        if record is not None:
+            error_text = f"{type(error).__name__}: {error}"
+            traceback_text = traceback.format_exc()
+            if record.plugin is not None:
+                self.unload(name)
+            record.status = PluginStatus.FAILED
+            record.error = error_text
+            record.traceback_text = traceback_text
+        self._report(name, phase, error)
+
+    def _report(self, plugin: str, phase: str, error: BaseException) -> None:
+        if self.reporter is not None:
+            self.reporter.report(plugin, phase, error)

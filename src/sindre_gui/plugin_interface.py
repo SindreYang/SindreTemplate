@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget
 Dock = QWidget
 AddDock = Callable[[str, QWidget], Dock]
 RemoveDock = Callable[[Dock], None]
+Guard = Callable[[Callable], Callable]
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +22,7 @@ class PluginContext:
     main_window: QMainWindow
     add_dock: AddDock
     remove_dock: RemoveDock
+    guard: Guard
     logger: Logger
 
 
