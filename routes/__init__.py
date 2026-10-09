@@ -2,6 +2,12 @@
 
 
 def init_app(app):
-    from .split import blueprint as split_blueprint
+    from .split import blueprint as split_blueprint, cleanup_expired_jobs
 
     app.register_blueprint(split_blueprint)
+    removed = cleanup_expired_jobs(
+        app.config["SPLIT_CACHE_DIR"],
+        int(app.config["SPLIT_CACHE_TTL_SECONDS"]),
+    )
+    if removed:
+        app.logger.info("Removed %d expired inference job(s)", removed)

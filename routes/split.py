@@ -2,6 +2,7 @@
 
 import re
 import shutil
+import time
 from pathlib import Path
 from uuid import uuid4
 
@@ -18,6 +19,25 @@ blueprint = Blueprint(
 ALLOWED_EXTENSIONS = {".ply", ".obj", ".stl"}
 ALLOWED_ARTIFACTS = {"ply": "mesh.ply", "obj": "mesh.obj", "mtl": "mesh.obj.mtl"}
 JOB_ID_PATTERN = re.compile(r"^[a-f0-9]{32}$")
+
+
+def cleanup_expired_jobs(cache_dir: str | Path, ttl_seconds: int) -> int:
+    """Remove completed job directories older than the configured retention period."""
+    root = Path(cache_dir)
+    if ttl_seconds <= 0 or not root.exists():
+        return 0
+    cutoff = time.time() - ttl_seconds
+    removed = 0
+    for job_dir in root.iterdir():
+        try:
+            is_expired = job_dir.is_dir() and job_dir.stat().st_mtime < cutoff
+        except FileNotFoundError:
+            continue
+        if not is_expired:
+            continue
+        shutil.rmtree(job_dir, ignore_errors=True)
+        removed += 1
+    return removed
 
 
 def _load_inference_backend():
@@ -69,9 +89,9 @@ def segment():
         teeth_seg, export_mtl = current_app.config.get(
             "SPLIT_BACKEND_LOADER", _load_inference_backend
         )()
-    except (ImportError, ModuleNotFoundError) as exc:
-        current_app.logger.warning("Segmentation backend is unavailable: %s", exc)
-        return _error("Segmentation backend dependencies are not installed", 503)
+    except Exception as exc:
+        current_app.logger.exception("Segmentation backend is unavailable: %s", exc)
+        return _error("Segmentation backend is unavailable", 503)
 
     job_id = uuid4().hex
     job_dir = Path(current_app.config["SPLIT_CACHE_DIR"]) / job_id
@@ -114,6 +134,18 @@ def segment():
         ),
         200,
     )
+
+
+@blueprint.delete("/jobs/<job_id>")
+def delete_job(job_id):
+    """Allow clients to explicitly release a completed result."""
+    if not JOB_ID_PATTERN.fullmatch(job_id):
+        return _error("Result not found", 404)
+    job_dir = Path(current_app.config["SPLIT_CACHE_DIR"]) / job_id
+    if not job_dir.is_dir():
+        return _error("Result not found", 404)
+    shutil.rmtree(job_dir, ignore_errors=True)
+    return "", 204
 
 
 @blueprint.get("/download/<job_id>/<artifact>")

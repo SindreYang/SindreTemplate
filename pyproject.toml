@@ -11,6 +11,12 @@ dependencies = [
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
 
+[project.optional-dependencies]
+prod = [
+  "gunicorn>=23; platform_system != 'Windows'",
+  "waitress>=3; platform_system == 'Windows'",
+]
+
 [tool.uv]
 default-groups = ["dev"]
 

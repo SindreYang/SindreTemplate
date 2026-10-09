@@ -12,6 +12,8 @@
 - 缺少模型时返回明确的 503
 - Flask 测试配置
 - CORS 配置入口
+- JSON 错误响应
+- 结果缓存自动过期和手动删除
 
 ## 适合谁？
 
@@ -23,8 +25,19 @@
 git clone --branch template/flask --single-branch https://github.com/SindreYang/SindreTemplate.git my-service
 cd my-service
 uv sync
+uv sync --extra prod
 uv run pytest
 uv run python app.py
+```
+
+`app.py` 适合本地调试。生产环境使用 WSGI 入口：
+
+```powershell
+# Linux/macOS
+gunicorn --workers 2 --bind 127.0.0.1:5000 wsgi:app
+
+# Windows 示例
+waitress-serve --listen=127.0.0.1:5000 wsgi:app
 ```
 
 服务启动后访问：
@@ -48,10 +61,29 @@ curl http://127.0.0.1:5000/health
 - 响应会说明后端暂不可用。
 - 不会把内部 traceback 直接返回给客户端。
 
+## 配置环境变量
+
+```powershell
+$env:CORS_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000"
+$env:MAX_CONTENT_LENGTH = "104857600"
+$env:SPLIT_CACHE_TTL_SECONDS = "86400"
+$env:FLASK_HOST = "127.0.0.1"
+$env:FLASK_PORT = "5000"
+```
+
+推理结果默认保留 24 小时，服务启动时会清理过期目录。客户端也可以在任务完成后主动释放结果：
+
+```powershell
+curl -X DELETE http://127.0.0.1:5000/split/jobs/<job_id>
+```
+
+上传超限、路由不存在、方法错误和内部异常都会返回 JSON，而不是 HTML 错误页面。
+
 ## 目录结构
 
 ```text
 app.py          应用工厂和本地启动入口
+wsgi.py         Gunicorn/Waitress 生产入口
 conf/           配置和模型映射
 routes/         HTTP 路由
 services/       可选服务集成

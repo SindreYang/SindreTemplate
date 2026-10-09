@@ -1,5 +1,7 @@
 import io
+import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -124,6 +126,46 @@ class AppTests(unittest.TestCase):
         response = self.client.get("/split/download/../../etc/passwd/ply")
 
         self.assertEqual(response.status_code, 404)
+
+    def test_unknown_routes_return_json(self):
+        response = self.client.get("/does-not-exist")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json(), {"error": "Resource not found"})
+
+    def test_explicit_delete_releases_job(self):
+        response = self.client.post(
+            "/split",
+            data={
+                "model": "上颌",
+                "file": (io.BytesIO(b"mesh"), "teeth.ply"),
+            },
+        )
+        job_id = response.get_json()["job_id"]
+        job_dir = self.root / "cache" / job_id
+
+        deleted = self.client.delete(f"/split/jobs/{job_id}")
+
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(job_dir.exists())
+
+    def test_expired_jobs_are_removed_on_startup(self):
+        cache_dir = self.root / "existing-cache"
+        expired = cache_dir / ("a" * 32)
+        expired.mkdir(parents=True)
+        (expired / "mesh.ply").write_bytes(b"old")
+        old_time = time.time() - 3600
+        os.utime(expired, (old_time, old_time))
+
+        create_app(
+            {
+                "TESTING": True,
+                "SPLIT_CACHE_DIR": str(cache_dir),
+                "SPLIT_CACHE_TTL_SECONDS": 60,
+            }
+        )
+
+        self.assertFalse(expired.exists())
 
 
 if __name__ == "__main__":
