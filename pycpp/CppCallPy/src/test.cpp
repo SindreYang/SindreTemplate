@@ -14,7 +14,6 @@ int test_other( )
     py::print(sys.attr("path"));
 
     py::print("\n尝试导入numpy\n");
-    //pybind11::module::import("sys").attr("path").cast<pybind11::list>().append("D:/software/develop/Miniconda3/Library/bin");
     py::module np = py::module::import("numpy");
     py::print("\t numpy版本:\n");
     py::print(np.attr("__version__"));
@@ -62,7 +61,6 @@ int test_other( )
 //        f<<"load return_dict ...."<<endl;
 //        points=out["points"].cast<MatD3ai>();
 
-    system("pause");
     return 0;
 }
 
@@ -116,7 +114,6 @@ void main_thread() {
 }
 
 int main(){
-    system("mode con cp select=65001");//支持中文
     python_init("./");//用于定义python位置,否则无法初始化
     py::scoped_interpreter guard;//必须在主线程初始化，因为pybind11无法在其他位置彻底清除python变量，从而导致崩溃问题；
     main_thread();

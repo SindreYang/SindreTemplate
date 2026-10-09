@@ -1,7 +1,8 @@
-#include <vtkProperty.h>
 #include <vtkSelectPolyData.h>
 #include <vtkSphereSource.h>
 #include <vtkClipPolyData.h>
+#include <vtkNew.h>
+#include <vtkPoints.h>
 #include <vtkProperty.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkLODActor.h>

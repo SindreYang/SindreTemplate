@@ -1,76 +1,72 @@
+#include <cmath>
+#include <cuda_runtime.h>
 #include <iostream>
-#include "add.h"
-//
-// Created by sindre on 2023/1/28.
-//
 
-// Á½¸öÏòÁ¿¼Ó·¨kernel£¬gridºÍblock¾ùÎªÒ»Î¬
-__global__ void add(float* x, float * y, float* z, int n)
-{
-    // »ñÈ¡È«¾ÖË÷Òı
-    int index = threadIdx.x + blockIdx.x * blockDim.x;
-    // ²½³¤
-    int stride = blockDim.x * gridDim.x;
-    for (int i = index; i < n; i += stride)
-    {
+#include "add.h"
+
+// æ¯ä¸ªçº¿ç¨‹å¤„ç†ä¸€ä¸ªèµ·å§‹ä½ç½®ï¼Œå¹¶ä»¥ stride æ–¹å¼è¦†ç›–å®Œæ•´æ•°ç»„ã€‚
+__global__ void add_kernel(const float* x, const float* y, float* z, int n) {
+    const int index = threadIdx.x + blockIdx.x * blockDim.x;
+    const int stride = blockDim.x * gridDim.x;
+    for (int i = index; i < n; i += stride) {
         z[i] = x[i] + y[i];
     }
 }
 
-
-void get_cuda_info(){
-    int dev=0;
-    cudaDeviceProp devProp;
-    cudaGetDeviceProperties(&devProp, dev);
-    std::cout << "Ê¹ÓÃGPU device " << dev << ": " << devProp.name << std::endl;
-    std::cout << "ÏÔ´æ´óĞ¡£º"  << devProp.totalGlobalMem / 1024.0 / 1024.0/ 1024.0<< " GB" << std::endl;
-    std::cout << "SMµÄÊıÁ¿£º" << devProp.multiProcessorCount << std::endl;
-    std::cout << "Ã¿¸öÏß³Ì¿éµÄ¹²ÏíÄÚ´æ´óĞ¡£º"  << devProp.sharedMemPerBlock / 1024.0 << " KB" << std::endl;
-    std::cout << "Ã¿¸öÏß³Ì¿éµÄ×î´óÏß³ÌÊı£º" << devProp.maxThreadsPerBlock << std::endl;
-    std::cout << "Ã¿¸öEMµÄ×î´óÏß³ÌÊı£º" << devProp.maxThreadsPerMultiProcessor << std::endl;
-    std::cout << "Ã¿¸öSMµÄ×î´óÏß³ÌÊøÊı£º" << devProp.maxThreadsPerMultiProcessor / 32 << std::endl;
-
+void get_cuda_info() {
+    int device = 0;
+    cudaDeviceProp properties{};
+    if (cudaGetDeviceProperties(&properties, device) != cudaSuccess) {
+        std::cerr << "Unable to query CUDA device information" << std::endl;
+        return;
+    }
+    std::cout << "CUDA device " << device << ": " << properties.name << std::endl;
+    std::cout << "Global memory: "
+              << properties.totalGlobalMem / 1024.0 / 1024.0 / 1024.0 << " GB" << std::endl;
+    std::cout << "Multiprocessors: " << properties.multiProcessorCount << std::endl;
+    std::cout << "Max threads per block: " << properties.maxThreadsPerBlock << std::endl;
 }
 
-void add_test()
-{
-    system("mode con cp select=936"); // 65001   UTF-8´úÂëÒ³  936¼òÌåÖĞÎÄÄ¬ÈÏµÄGBK
+void add_test() {
     get_cuda_info();
-    int N = 1 << 20;
-    int nBytes = N * sizeof(float);
+    constexpr int count = 1 << 20;
+    const std::size_t bytes = static_cast<std::size_t>(count) * sizeof(float);
+    float* x = nullptr;
+    float* y = nullptr;
+    float* z = nullptr;
 
-    // ÉêÇëÍĞ¹ÜÄÚ´æ
-    float *x, *y, *z;
-    cudaMallocManaged((void**)&x, nBytes);
-    cudaMallocManaged((void**)&y, nBytes);
-    cudaMallocManaged((void**)&z, nBytes);
-
-    // ³õÊ¼»¯Êı¾İ
-    for (int i = 0; i < N; ++i)
-    {
-        x[i] = 10.0;
-        y[i] = 20.0;
+    if (cudaMallocManaged(&x, bytes) != cudaSuccess ||
+        cudaMallocManaged(&y, bytes) != cudaSuccess ||
+        cudaMallocManaged(&z, bytes) != cudaSuccess) {
+        std::cerr << "Unable to allocate CUDA managed memory" << std::endl;
+        cudaFree(x);
+        cudaFree(y);
+        cudaFree(z);
+        return;
     }
 
-    // ¶¨ÒåkernelµÄÖ´ĞĞÅäÖÃ
-    dim3 blockSize(256);
-    dim3 gridSize((N + blockSize.x - 1) / blockSize.x);
-    // Ö´ĞĞkernel
-    add << < gridSize, blockSize >> >(x, y, z, N);
+    for (int i = 0; i < count; ++i) {
+        x[i] = 10.0F;
+        y[i] = 20.0F;
+    }
 
-    // Í¬²½device ±£Ö¤½á¹ûÄÜÕıÈ··ÃÎÊ
-    cudaDeviceSynchronize();
-    // ¼ì²éÖ´ĞĞ½á¹û
-    float maxError = 0.0;
-    for (int i = 0; i < N; i++)
-        maxError = fmax(maxError, fabs(z[i] - 30.0));
-    std::cout << "×î´óÎó²î: " << maxError << std::endl;
+    const dim3 block_size(256);
+    const dim3 grid_size((count + block_size.x - 1) / block_size.x);
+    add_kernel<<<grid_size, block_size>>>(x, y, z, count);
 
-    // ÊÍ·ÅÄÚ´æ
+    const cudaError_t sync_status = cudaDeviceSynchronize();
+    if (sync_status != cudaSuccess) {
+        std::cerr << "CUDA kernel execution failed: "
+                  << cudaGetErrorString(sync_status) << std::endl;
+    }
+
+    float max_error = 0.0F;
+    for (int i = 0; i < count; ++i) {
+        max_error = fmax(max_error, fabs(z[i] - 30.0F));
+    }
+    std::cout << "Maximum error: " << max_error << std::endl;
+
     cudaFree(x);
     cudaFree(y);
     cudaFree(z);
-
-
-    system("pause");
 }

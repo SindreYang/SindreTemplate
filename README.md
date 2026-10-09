@@ -10,6 +10,12 @@ cmake --build build --config RelWithDebInfo
 ctest --test-dir build --output-on-failure -C RelWithDebInfo
 ```
 
+安装默认示例：
+
+```powershell
+cmake --install build --prefix install
+```
+
 成功后你会得到一个最小示例程序 `sindre_template_example`，并看到
 `sindre_template_example_runs` 测试通过。这个小程序的意义是先确认编译器、
 标准库和 CMake 环境都正常，再开始添加自己的业务代码。
@@ -56,12 +62,35 @@ cmake -S . -B build-vtk -DSINDRE_BUILD_VTK_DEMO=ON
 cmake --build build-vtk --config RelWithDebInfo
 ```
 
+CUDA 示例：
+
+```powershell
+cmake -S . -B build-cuda -DSINDRE_BUILD_CUDA_EXAMPLE=ON
+cmake --build build-cuda --config RelWithDebInfo
+```
+
+CUDA 选项会检查 `nvcc`，没有 CUDA 编译器时会立即给出明确错误，不会悄悄跳过。
+
+Python 嵌入示例：
+
+```powershell
+cmake -S . -B build-python `
+  -DSINDRE_BUILD_PYTHON_EMBED=ON `
+  -DCMAKE_PREFIX_PATH="<pybind11安装前缀>"
+cmake --build build-python --config RelWithDebInfo
+```
+
+Python 嵌入依赖当前环境的 Python Development、NumPy 和 pybind11，模板不再
+写死 Miniconda 或其他开发机路径。
+
 ## 为什么使用这个模板？
 
 - 不绑定某台电脑的 vcpkg、CUDA 或 DLL 路径。
 - C++ 标准、输出目录和可选功能集中在顶层配置。
 - 第三方库默认关闭，普通项目可以先快速编译。
 - 构建目录可删除，不会污染源码。
+- OpenMP、VTK、CUDA 和 Python 嵌入能力都由顶层开关控制。
+- 默认启用跨平台编译警告，可选启用 AddressSanitizer/UndefinedBehaviorSanitizer。
 - 可以在后续提交中逐步增加库、测试和安装规则。
 
 ## 常见问题
@@ -71,6 +100,9 @@ cmake --build build-vtk --config RelWithDebInfo
 - Visual Studio 生成器找不到 SDK：打开 **x64 Native Tools Command Prompt**，或显式使用
   Ninja，并确保 `cl.exe`、Windows SDK 和 `ninja` 都在当前环境中。
 - VTK 找不到：关闭 `SINDRE_BUILD_VTK_DEMO`，或配置 `CMAKE_PREFIX_PATH` 指向 VTK 安装目录。
+- OpenMP 找不到：安装编译器对应的 OpenMP runtime，或保持 `SINDRE_ENABLE_OPENMP=OFF`。
+- pybind11 找不到：安装 pybind11 的 CMake package，并通过 `CMAKE_PREFIX_PATH` 指定其前缀。
+- CUDA 找不到：安装与当前编译器匹配的 CUDA Toolkit，并确认 `nvcc` 在 PATH 中。
 
 ## 目录
 
